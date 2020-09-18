@@ -1,25 +1,46 @@
 version: '3.4'
-
+# docker run -p 7073:7073 --name flectra --network infra_default --link infra_db.1.mbhg8nshsy8gk9ett8xq2d4zj:db -t flectrahq/flectra:v1.6.3
 services:
 
   db:
-    image: postgres
+    image: postgres:12.2
     ports:
       - 5432:5432
     environment:
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-       - pg-data:/var/lib/postgresql/data/pgdata
+      - pg-data:/var/lib/postgresql/data/pgdata
   
   rabbitmq:
-    image: rabbitmq
+    image: rabbitmq:3.8
     ports:
       - 5672:5672
-      - 8080:15672
+      - 8081:15672
     volumes:
       - rabbit-data:/var/lib/rabbitmq
+
+ # graphql-engine:
+ #   image: hasura/graphql-engine:v1.1.0
+ #   ports:
+ #   - "8080:8080"
+ #   depends_on:
+ #   - "postgres"
+ #   restart: always
+ #   environment:
+ #     HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:postgrespassword@postgres:5432/postgres
+ #     HASURA_GRAPHQL_ENABLE_CONSOLE: "true" # set to "false" to disable console
+ #     HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
+      ## uncomment next line to set an admin secret
+      # HASURA_GRAPHQL_ADMIN_SECRET: myadminsecretkey
+
+#  flectra:
+#   image: flectrahq/flectra:v1.6.3
+#    ports:
+#      - 7073:7073
   
 volumes:
   pg-data:
   rabbit-data:
+  db_data:

@@ -12,7 +12,7 @@ export class ClientManager {
     }
 
     public async updateClient(clientId, clientSecret) {
-        let client = await Client.find<Client>({where: {clientId: clientId}});
+        let client = await Client.findOne<Client>({where: {clientId: clientId}});
         if(client) {
             client.clientId = clientId;
             client.clientSecret = clientSecret;
@@ -23,7 +23,7 @@ export class ClientManager {
     }
 
     public async deleteClient(clientId) {
-        let client = await Client.find<Client>({where: {clientId: clientId}});
+        let client = await Client.findOne<Client>({where: {clientId: clientId}});
         if(client) {
             return client.destroy();
         } else {

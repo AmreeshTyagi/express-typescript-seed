@@ -15,6 +15,33 @@ export class AuthRouter extends BaseRouter {
         this.buildRoutes();
     }
 
+    public async localLogin(req: express.Request, res: express.Response, next: express.NextFunction) {
+        try {
+            const user = await this.authManager.logout(req.user);
+            res.json(user);
+        } catch(error) {
+            next(error);
+        }
+    }
+
+    public async githubLogin(req: express.Request, res: express.Response, next: express.NextFunction) {
+        try {
+            const user = await this.authManager.logout(req.user);
+            res.json(user);
+        } catch(error) {
+            next(error);
+        }
+    }
+
+    public async ssoLogin(req: express.Request, res: express.Response, next: express.NextFunction) {
+        try {
+            const user = await this.authManager.logout(req.user);
+            res.json(user);
+        } catch(error) {
+            next(error);
+        }
+    }
+
     public async logout(req: express.Request, res: express.Response, next: express.NextFunction) {
         try {
             const user = await this.authManager.logout(req.user);
@@ -26,11 +53,10 @@ export class AuthRouter extends BaseRouter {
 
     private buildRoutes() {
         const oath = new Oauth2();
-        this.router.post("/token", oath.getTokenEndpoint());
-        this.router.post('/facebook/token', passport.authenticate('facebook-token'), (req, res) => {
-            res.json({token: req.user.token});
-        });
-        this.router.post("/logout", Auth.getBearerMiddleware(),  this.logout.bind(this));
+        this.router.post("/local/login", passport.authenticate('local'),this.localLogin.bind(this));
+        this.router.post('/github/login', passport.authenticate('github'),this.githubLogin.bind(this));
+        this.router.post("/sso/login", passport.authenticate('saml'),this.ssoLogin.bind(this));
+        this.router.post("/logout", Auth.isAuthenticated(),  this.logout.bind(this));
     }
 
 

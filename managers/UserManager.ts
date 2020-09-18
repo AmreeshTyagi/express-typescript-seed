@@ -27,7 +27,7 @@ export class UserManager {
 
     public async updateUser(userId: string, email: string, firstName: string, lastName: string, role: RoleEnum, profilePicUrl?: string): Promise<User> {
 
-        const user = await User.find<User>({where: {id: userId}});
+        const user = await User.findOne<User>({where: {id: userId}});
         if (user) {
             user.email = email || user.email;
             user.firstName = firstName || user.firstName;
@@ -44,7 +44,7 @@ export class UserManager {
     public async updateProfileImage(userId: string, image: Express.Multer.File): Promise<User> {
 
         const s3Manager = new S3Manager();
-        const user = await User.find<User>({where: {id: userId}});
+        const user = await User.findOne<User>({where: {id: userId}});
         if (user) {
             s3Manager.uploadImage(image, 'profileImages', userId);
             user.profilePicUrl = `${process.env.S3_PROFILE_PIC_URL}/${userId}`;
@@ -66,7 +66,7 @@ export class UserManager {
     }
 
     public async deleteUser(userId: string): Promise<User | null> {
-        const user = await User.find<User>({where: {id: userId}});
+        const user = await User.findOne<User>({where: {id: userId}});
         if (user) {
             await user.destroy();
             return user;
@@ -77,7 +77,7 @@ export class UserManager {
     }
 
     public async updatePassword(userId: string, currentPassword: string, newPassword: string): Promise<User> {
-        const user = await User.find<User>({where: {id: userId}});
+        const user = await User.findOne<User>({where: {id: userId}});
         if (user) {
             const authorized = await Auth.comparePasswords(currentPassword, user.password);
             if (authorized) {

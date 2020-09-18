@@ -60,11 +60,11 @@ export class ClientRouter {
     }
 
     private buildRoutes() {
-        this.router.get("/", Auth.getBearerMiddleware(), this.get.bind(this));
-        this.router.get("/:id", Auth.getBearerMiddleware(), this.getById.bind(this));
-        this.router.post("/", Auth.getBearerMiddleware(), this.post.bind(this));
-        this.router.put("/:id", Auth.getBearerMiddleware(), this.put.bind(this));
-        this.router.delete("/:id", Auth.getBearerMiddleware(), this.delete.bind(this));
+        this.router.get("/", Auth.isAuthenticated(), this.get.bind(this));
+        this.router.get("/:id", Auth.isAuthenticated(), this.getById.bind(this));
+        this.router.post("/", Auth.isAuthenticated(), this.post.bind(this));
+        this.router.put("/:id", Auth.isAuthenticated(), this.put.bind(this));
+        this.router.delete("/:id", Auth.isAuthenticated(), this.delete.bind(this));
     }
 
 }

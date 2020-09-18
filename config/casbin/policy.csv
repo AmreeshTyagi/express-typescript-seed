@@ -1,0 +1,2 @@
+p, admin, /providers/*, GET
+p, notadmin, /, POST

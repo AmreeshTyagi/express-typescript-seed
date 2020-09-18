@@ -13,7 +13,8 @@ import {Client} from "../models/entities/Client";
 import {sign, verify} from 'jsonwebtoken';
 import {AuthError} from "../errors/AuthError";
 
-const FacebookTokenStrategy = require('passport-facebook-token');
+const GitHubStrategy = require('passport-github').Strategy;
+const MultiSamlStrategy = require('passport-saml/multiSamlStrategy');
 
 export class Auth {
 
@@ -23,7 +24,7 @@ export class Auth {
         });
 
         passport.deserializeUser(function (id: number, done) {
-            User.find<User>({where: {id}}).then(function (user: User) {
+            User.findOne<User>({where: {id}}).then(function (user: User) {
                 done(null, user);
             });
         });
@@ -76,7 +77,7 @@ export class Auth {
                     if(jwtSecret) {
                         verify(accessToken.token, jwtSecret, (err, decodedToken: any) => {
                             if (decodedToken && accessToken.userId === decodedToken.id) {
-                                User.find({where: {id: accessToken.userId}}).then(user => {
+                                User.findOne({where: {id: accessToken.userId}}).then(user => {
                                     return done(null, user);
                                 }).catch(error => {
                                     return done(new AuthError(error.message), false);
@@ -96,99 +97,91 @@ export class Auth {
     }
 
 
-    /**
-     * BasicStrategy & ClientPasswordStrategy
-     *
-     * These strategies are used to authenticate registered OAuth clients.  They are
-     * employed to protect the `token` endpoint, which consumers use to obtain
-     * access tokens.  The OAuth 2.0 specification suggests that clients use the
-     * HTTP Basic scheme to authenticate.  Use of the client password strategy
-     * allows clients to send the same credentials in the request body (as opposed
-     * to the `Authorization` header).  While this approach is not recommended by
-     * the specification, in practice it is quite common.
-     */
-    static useBasicStrategy() {
-        passport.use(new BasicStrategy(
-            function (clientId, clientSecret, done) {
-                Client.findOne({
-                    where: {clientId: clientId}
-                }).then(function (client: any) {
-                    if (!client) return done(null, false);
-                    if (!bcrypt.compareSync(clientSecret, client.clientSecret)) return done(null, false);
-                    return done(null, client);
-                }).catch(function (error) {
-                    return done(error);
-                });
-            }
-        ));
-
-        passport.use(new ClientPasswordStrategy(
-            function (clientId, clientSecret, done) {
-                Client.findOne({
-                    where: {clientId: clientId}
-                }).then(function (client: any) {
-                    if (!client) return done(null, false);
-                    if (!bcrypt.compareSync(clientSecret, client.clientSecret)) return done(null, false);
-                    return done(null, client);
-                }).catch(function (error) {
-                    return done(error);
-                });
-            }
-        ));
-    }
-
-    static useFacebookTokenStrategy() {
-        passport.use(new FacebookTokenStrategy({
-                clientID: process.env.FACEBOOK_CLIENT_ID,
-                clientSecret: process.env.FACEBOOK_CLIENT_SECRET
-            }, (accessToken, refreshToken, profile, done) => {
-                const parsedProfile = profile._json;
-                User.findOne<User>({where: {email: parsedProfile.email}}).then(user => {
-                    if (user) {
-                        AccessToken.findOne<AccessToken>({where: {userId: user.id}}).then(accessToken => {
-                            if (accessToken) {
-                                const jwtSecret: string | undefined = process.env.JWT_SECRET;
-                                if(jwtSecret) {
-                                    verify(accessToken.token, jwtSecret, (err, decodedToken: any) => {
-                                        if (decodedToken && accessToken.userId === decodedToken.id) {
-                                            return done(null, accessToken);
-                                        } else {
-                                            return done(new AuthError(err.message), false);
-                                        }
-                                    });
-                                } else {
-                                    return done(new AuthError("JWT Secret undefined"), false);
-                                }
+    static useGithubStrategy() {
+        passport.use(new GitHubStrategy({
+            clientID: 'GITHUB_CLIENT_ID',
+            clientSecret: 'GITHUB_CLIENT_SECRET',
+            callbackURL: "http://127.0.0.1:3000/auth/github/callback"
+        }, (accessToken, refreshToken, profile, done) => {
+            const githubId = profile.id;
+            User.findOne<User>({ where: { id: githubId } }).then(user => {
+                if (user) {
+                    AccessToken.findOne<AccessToken>({ where: { userId: user.id } }).then(accessToken => {
+                        if (accessToken) {
+                            const jwtSecret: string | undefined = process.env.JWT_SECRET;
+                            if (jwtSecret) {
+                                verify(accessToken.token, jwtSecret, (err, decodedToken: any) => {
+                                    if (decodedToken && accessToken.userId === decodedToken.id) {
+                                        return done(null, accessToken);
+                                    } else {
+                                        return done(new AuthError(err.message), false);
+                                    }
+                                });
                             } else {
-                                const jwtSecret: string | undefined = process.env.JWT_SECRET;
-                                if(jwtSecret) {
-                                    sign(user, jwtSecret, {expiresIn: "10h"}, (error, token) => {
-                                        AccessToken.create({
-                                            token: token,
-                                            userId: user.id
-                                        }).then((accessToken: AccessToken) => {
-                                            return done(null, accessToken);
-                                        }).catch(error => {
-                                            return done(error, false);
-                                        });
-                                    });
-                                } else {
-                                    return done(new AuthError("JWT Secret undefined"), false);
-                                }
-
+                                return done(new AuthError("JWT Secret undefined"), false);
                             }
-                        });
-                    } else {
-                        return done("No account found with email: " + parsedProfile.email);
-                    }
-                });
-            }
+                        } else {
+                            const jwtSecret: string | undefined = process.env.JWT_SECRET;
+                            if (jwtSecret) {
+                                sign(user, jwtSecret, { expiresIn: "10h" }, (error, token) => {
+                                    AccessToken.create({
+                                        token: token,
+                                        userId: user.id
+                                    }).then((accessToken: AccessToken) => {
+                                        return done(null, accessToken);
+                                    }).catch(error => {
+                                        return done(error, false);
+                                    });
+                                });
+                            } else {
+                                return done(new AuthError("JWT Secret undefined"), false);
+                            }
+                        }
+                    });
+                } else {
+                    return done("No account found with email: " + profile.email);
+                }
+            });
+        }
         ));
     }
 
-    public static getBearerMiddleware() {
+    static useSamlStrategy() {
+        passport.use(new MultiSamlStrategy(
+            {
+                passReqToCallback: true, //makes req available in callback
+                getSamlOptions: function (request, done) {
+                    // findProvider(request, function (err, provider) {
+                    //     if (err) {
+                    //         return done(err);
+                    //     }
+                    //     return done(null, provider.configuration);
+                    // });
+                }
+            },
+            function (req, profile, done) {
+                // findByEmail(profile.email, function (err, user) {
+                //     if (err) {
+                //         return done(err);
+                //     }
+                //     return done(null, user);
+                // });
+            })
+        );
+    }
+    // public static getLocalMiddleware() {
+    //     return passport.authenticate('local', { session: false, failWithError: true }
+    //         , function (err, user, info) {
+    //             console.log(info);
+    //         })
+    // }
+
+    public static isAuthenticated() {
         return passport.authenticate('bearer', {session: false, failWithError: true});
     }
+    // public static getGithubMiddleware() {
+    //     return passport.authenticate('github');
+    // }
 }
 
 

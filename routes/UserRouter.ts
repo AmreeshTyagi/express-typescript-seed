@@ -6,6 +6,7 @@ import {UserDTO} from "../models/dtos/UserDTO";
 import {Roles} from "../auth/roles";
 import * as multer from 'multer';
 import {BaseRouter} from "./BaseRouter";
+import { log } from "util";
 
 export class UserRouter extends BaseRouter {
 
@@ -90,12 +91,12 @@ export class UserRouter extends BaseRouter {
     }
 
     private buildRoutes() {
-        this.router.get("/", Auth.getBearerMiddleware(), Roles.connectRoles.can('modify user'), this.get.bind(this));
+        this.router.get("/", Auth.isAuthenticated(), Roles.connectRoles.can('modify user'), this.get.bind(this));
         this.router.post("/", this.post.bind(this));
-        this.router.delete("/:id", Auth.getBearerMiddleware(), Roles.connectRoles.can('modify user'), this.delete.bind(this));
-        this.router.put("/:id", Auth.getBearerMiddleware(), Roles.connectRoles.can('modify user'), this.put.bind(this));
-        this.router.get("/current", Auth.getBearerMiddleware(), this.getByToken.bind(this));
-        this.router.put("/:id/password",  Auth.getBearerMiddleware(), Roles.connectRoles.can('modify user'), this.changePassword.bind(this));
-        this.router.put("/:id/profileImage",  Auth.getBearerMiddleware(), Roles.connectRoles.can('modify user'), this.uploadHandler.single('profileImage'), this.uploadProfileImage.bind(this));
+        this.router.delete("/:id", Auth.isAuthenticated(), Roles.connectRoles.can('modify user'), this.delete.bind(this));
+        this.router.put("/:id", Auth.isAuthenticated(), Roles.connectRoles.can('modify user'), this.put.bind(this));
+        this.router.get("/current", Auth.isAuthenticated(), this.getByToken.bind(this));
+        this.router.put("/:id/password",  Auth.isAuthenticated(), Roles.connectRoles.can('modify user'), this.changePassword.bind(this));
+        this.router.put("/:id/profileImage",  Auth.isAuthenticated(), Roles.connectRoles.can('modify user'), this.uploadHandler.single('profileImage'), this.uploadProfileImage.bind(this));
     }
 }

@@ -8,7 +8,7 @@ export class AuthManager {
     }
 
     public async getUserByToken(token: string): Promise<any> {
-        const storedToken = await AccessToken.find<AccessToken>({where: {token: token}, include: [User]});
+        const storedToken = await AccessToken.findOne<AccessToken>({where: {token: token}, include: [User]});
         if (storedToken && storedToken.user) {
             return storedToken.user;
         } else {
@@ -26,6 +26,8 @@ export class AuthManager {
     }
 
     public async logout(user: User): Promise<any> {
+
+
         const accessToken = await AccessToken.findOne({where: {userId: user.id}});
         if(accessToken) {
             return accessToken.destroy();

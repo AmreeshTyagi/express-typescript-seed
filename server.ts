@@ -5,6 +5,7 @@ import * as passport from "passport";
 import * as config from "./config/config";
 import * as http from "http";
 import {Auth} from "./auth/auth";
+import {authorize} from "./auth/authorization";
 import {Models} from "./models";
 import {Router} from "./routes/index";
 import {errorHandler} from "./errors/ErrorHandler";
@@ -13,6 +14,8 @@ import {MessageManager} from "./managers/MessageManager";
 import {InternalServerError} from "./errors/InternalServerError";
 import {logger} from "./lib/logger";
 import morgan = require("morgan");
+import { newEnforcer } from 'casbin';
+import { join } from 'path';
 
 const amqplib = require('amqplib');
 
@@ -32,6 +35,13 @@ export class Server {
             // Configure application
             Server.configureApp();
 
+            Server.app.use(authorize(
+                async() => {
+                    const enforcer = await newEnforcer(join(__dirname, 'config/casbin/model.conf'), join(__dirname, 'config/casbin/policy.csv'));
+                    return enforcer;
+                }
+            ));
+            
             // Initialize OAuth
             Server.initializeAuth();
 
@@ -83,11 +93,12 @@ export class Server {
 
     private static initializeAuth() {
         Server.app.use(passport.initialize());
+        
         Auth.serializeUser();
-        Auth.useBasicStrategy();
+        // Auth.useLocalStrategy();
         Auth.useBearerStrategy();
         Auth.useLocalStrategy();
-        Auth.useFacebookTokenStrategy();
+        // Auth.useFacebookTokenStrategy();
     }
 
     private static initializeRoles() {

@@ -13,11 +13,15 @@ export class BaseModel<T> extends Model<T> {
     id: string;
 
     @CreatedAt
-    creationDate: Date;
+    createdAt: Date;
 
     @UpdatedAt
-    updatedOn: Date;
+    updatedAt: Date;
 
     @DeletedAt
-    deletionDate: Date;
+    deletedAt: Date;
+
+    @IsUUID('all')
+    @Column(DataType.UUID)
+    createdBy: string;
 }

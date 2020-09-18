@@ -52,7 +52,7 @@ export class Oauth2 {
         });
 
         this.server.deserializeClient(function(id, done) {
-            Client.findById(id).then(function(client) {
+            Client.findByPk(id).then(function(client) {
                 return done(null, client);
             }, function(error) {
                 return done(error);

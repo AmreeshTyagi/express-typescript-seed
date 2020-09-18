@@ -6,6 +6,7 @@ import {DatabaseError as SequelizeError, ValidationError as SequelizeValidationE
 import {InternalServerError} from "./InternalServerError";
 import {ValidationError} from "./ValidationError";
 import {logger} from "../lib/logger";
+import {ValidationError as JoiValidationError} from 'express-validation';
 
 export function errorHandler(error, req, res, next) {
 
@@ -13,6 +14,11 @@ export function errorHandler(error, req, res, next) {
         logger.error(error);
         return res.status(400).json(error);
     }
+    if (error instanceof JoiValidationError) {
+        logger.error(error);
+        return res.status(error.status).json(error);
+    }
+ 
     if (error instanceof AuthError) {
         logger.error(error);
         return res.status(401).json(error);
